@@ -1,6 +1,6 @@
 import click
 from colorama import Fore, Style
-from alias import create_alias, delete_alias, show_aliases, edit_aliases
+from crud import create_alias, delete_alias, show_aliases, edit_aliases
 from about_author import about_author
 
 @click.group()

@@ -12,6 +12,7 @@ colorama.init()
 # Directory to store aliases file
 ALIASES_DIR = os.path.expanduser("~/.aliases_keeper")
 ALIASES_FILE = os.path.join(ALIASES_DIR, "aliases.txt")
+LOG_OUTPUT = True
 
 
 def ensure_aliases_file_exists():
@@ -59,7 +60,8 @@ def create_alias(alias_name, alias_value, group="Other"):
         with open(ALIASES_FILE, "w") as f:
             f.writelines(lines)
 
-        click.echo(Fore.GREEN + f"Alias '{alias_name}' created with value '{alias_value}' under group '{group}'.")
+        if LOG_OUTPUT:
+            click.echo(Fore.GREEN + f"Alias '{alias_name}' created with value '{alias_value}' under group '{group}'.")
     else:
         click.echo(Fore.RED + f"Alias '{alias_name}' already exists.")
 
@@ -87,7 +89,25 @@ def delete_alias(alias_name):
         # Write the updated lines back to the file
         with open(ALIASES_FILE, "w") as f:
             f.writelines(lines)
-        click.echo(Fore.GREEN + f"Alias '{alias_name}' has been deleted.")
+
+        if LOG_OUTPUT:
+            click.echo(Fore.GREEN + f"Alias '{alias_name}' has been deleted.")
+
+
+def edit_aliases(alias_name, alias_value, group):
+    global LOG_OUTPUT  # modify the global LOG_OUTPUT variable
+
+    ensure_aliases_file_exists()
+
+    LOG_OUTPUT = False
+
+    if not alias_exists(alias_name):
+        click.echo(Fore.RED + f"Alias '{alias_name}' does not exist.")
+        return
+
+    delete_alias(alias_name)
+    create_alias(alias_name, alias_value, group)
+    click.echo(Fore.GREEN + f"Alias '{alias_name}' Updated with value '{alias_value}' under group '{group}'.")
 
 
 def show_aliases():

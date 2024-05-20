@@ -1,46 +1,75 @@
-name: Build Binaries
+name: Build and Release
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
 
 jobs:
   build-linux:
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.x
+          python-version: '3.x'
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install pyinstaller
+
       - name: Build Linux Binary
         run: pyinstaller --onefile --distpath ./bin/linux ./src/aliasify.py
-      - name: Upload Linux Binary
-        uses: actions/upload-artifact@v2
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
         with:
-          name: aliasify-linux
-          path: ./bin/linux/aliasify
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ github.sha }}
+          release_name: Release ${{ github.sha }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Linux Binary
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./bin/linux/aliasify
+          asset_name: aliasify-linux
+          asset_content_type: application/octet-stream
 
   build-macos:
     runs-on: macos-latest
-
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.x
+          python-version: '3.x'
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install pyinstaller
+
       - name: Build macOS Binary
         run: pyinstaller --onefile --distpath ./bin/macos ./src/aliasify.py
+
       - name: Upload macOS Binary
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-release-asset@v1
         with:
-          name: aliasify-macos
-          path: ./bin/macos/aliasify
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./bin/macos/aliasify
+          asset_name: aliasify-macos
+          asset_content_type: application/octet-stream

@@ -4,10 +4,10 @@ import os
 import subprocess
 from colorama import Fore, init
 from about_author import about_author
+import shlex
 
 # Initialize colorama
 colorama.init()
-init(autoreset=True)
 
 # Directory to store aliases files
 ALIASES_DIR   = os.path.expanduser("~/.aliases_keeper")
@@ -59,23 +59,20 @@ def ensure_aliases_file_exists_and_sourced():
 
 def source_shell_profile():
     """Source the Shell profile environment to make new aliases available"""
-    # profile_file = detect_active_shell_profile()
-    # command = f"exec {profile_file}"
-    #
-    # if not profile_file:
-    #     click.echo(Fore.RED + "Could not detect active shell or unsupported shell.")
-    #     return;
-    #
-    # command = f". {profile_file}"
-    # #process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    # subprocess.run(f'. {profile_file}', shell=True)
-    # # stdout, stderr = process.communicate()
-    # #
-    # # if process.returncode == 0:
-    # #     click.echo(Fore.GREEN + f"Sourced {profile_file} to refresh the shell environment.")
-    # # else:
-    # #     click.echo(Fore.RED + f"Failed to source {profile_file} - Error: {stderr}")
-    # #     click.echo(Fore.RED + "Please open a new terminal session or source the file manually.")
+    profile_file = detect_active_shell_profile()
+
+    if not profile_file:
+        click.echo(Fore.RED + "Could not detect active shell or unsupported shell.")
+        return;
+
+    shell = os.path.basename(os.environ.get("SHELL", ""))
+    
+    subprocess.run(f"exec {shell}", shell=True)
+
+    # Inform the user how to source the profile manually
+    click.echo(Fore.GREEN + f"Sourced {profile_file} to refresh the shell environment.")
+    click.echo(Fore.YELLOW + f"If you encounter any issues, you can manually source the profile by running:")
+    click.echo(Fore.YELLOW + f"source {profile_file}")
 
 
 def detect_active_shell_profile():

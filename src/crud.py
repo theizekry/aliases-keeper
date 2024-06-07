@@ -1,20 +1,10 @@
 import click
-import colorama
 import os
 import subprocess
 from colorama import Fore, init
 from about_author import about_author
 import shlex
-
-# Initialize colorama
-colorama.init()
-
-# Directory to store aliases files
-ALIASES_DIR   = os.path.expanduser("~/.aliases_keeper")
-ALIASES_FILE  = os.path.join(ALIASES_DIR, "aliasify")
-PROFILE_FILES = [os.path.expanduser("~/.bashrc"), os.path.expanduser("~/.zshrc")]
-
-LOG_OUTPUT    = True
+from assets.assets import *
 
 # Mapped shells to their profile files path.
 SHELL_PROFILE_MAP = {

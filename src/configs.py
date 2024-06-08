@@ -2,6 +2,7 @@ import yaml
 import os
 import click
 from assets.assets import *
+from assets.alerts import *;
 
 def create_configs_file_if_not_exist():
     # Create an empty YAML file with an empty dictionary
@@ -10,7 +11,7 @@ def create_configs_file_if_not_exist():
             with open(CONFIGS_FILE, 'w') as file:
                 yaml.safe_dump({}, file)
     except Exception as exc:
-        print(f"Error creating YAML file: {exc}")
+        error(f"Error creating YAML file: {exc}")
 
 
 def ask_for_dotfiles_repository_path():
@@ -31,9 +32,9 @@ def ask_for_dotfiles_repository_path():
                         yaml.safe_dump(configs, file)
                         return expanded_path;
                 except Exception as exc:
-                    click.echo(f"Error writing to YAML file: {exc}")
+                    error(f"Error writing to YAML file: {exc}")
             else:
-                click.echo('Invalid path. Please try again.')
+                error('Invalid path. Please try again.')
 
 
 def load_configs():
@@ -42,7 +43,7 @@ def load_configs():
         with open(CONFIGS_FILE, 'r') as file:
             return yaml.safe_load(file) or {}
     except Exception as exc:
-        click.echo(f"Error reading YAML file: {exc}")
+        error(f"Error reading YAML file: {exc}")
 
 
 

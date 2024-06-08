@@ -1,10 +1,11 @@
 import click
 import os
+import shlex
 import subprocess
 from colorama import Fore, init
 from about_author import about_author
-import shlex
 from assets.assets import *
+from assets.alerts import *;
 
 # Mapped shells to their profile files path.
 SHELL_PROFILE_MAP = {
@@ -35,7 +36,7 @@ def ensure_aliases_file_exists_and_sourced():
     profile_file = detect_active_shell_profile()
 
     if not profile_file:
-        click.echo(Fore.RED + "Could not detect active shell or unsupported shell.")
+        error("Could not detect active shell or unsupported shell.")
 
     if os.path.exists(profile_file):
         with open(profile_file, "r") as file:
@@ -44,7 +45,7 @@ def ensure_aliases_file_exists_and_sourced():
     if alias_line not in content:
         with open(profile_file, "a") as file:
             file.write(f"\n# Aliases Keeper\n{alias_line}\n")
-            click.echo(Fore.YELLOW + f"Added {ALIASES_FILE} to {profile_file}")
+            success(f"Added {ALIASES_FILE} to {profile_file}")
 
 
 def source_shell_profile():

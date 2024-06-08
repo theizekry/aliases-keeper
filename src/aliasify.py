@@ -2,9 +2,9 @@ import click
 from colorama import Fore, Style
 from about_author import about_author
 from assets.assets import *
-from configs import create_configs_file_if_not_exist, ask_for_dotfiles_repository_path;
 from crud import create_alias, delete_alias, show_aliases, edit_aliases, source_shell_profile, flush_aliases
-
+from sync import syncRemoteToLocal, syncLocalToRemote, syncAliasify
+from assets.alerts import *;
 
 @click.group()
 def main():
@@ -63,15 +63,10 @@ def flush():
 
 
 @main.command(short_help="Sync your aliases with your Dotfiles Repository.")
-@click.option("--sync", "-s", default=False, required=True)
-@click.option("--type", "-t", type=click.Choice(['local-to-remote', 'remote-to-local']), required=True, help="Sync direction: 'local-to-remote' or 'remote-to-local'.")
-def sync(sync, type):
-    print(sync, type)
-    if click.confirm('Do you want to continue?', abort=True):
-        create_configs_file_if_not_exist()
-        dotfilesPath = ask_for_dotfiles_repository_path()
-        print(dotfilesPath);
-
+@click.option("--type", "-t", type=click.Choice(['local-to-remote', 'remote-to-local']), required=True, help="Sync direction: 'local-to-remote' or 'remote-to-local'.", default='local-to-remote')
+def sync(type):
+    """Sync aliases between local and remote Dotfiles repository."""
+    syncAliasify(type)
 
 if __name__ == "__main__":
     main()

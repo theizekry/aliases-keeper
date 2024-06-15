@@ -2,10 +2,11 @@ import subprocess
 import os
 import sys
 import click
-from configs import create_configs_file_if_not_exist, ask_for_dotfiles_repository_path;
+from configs import create_configs_file_if_not_exist, ask_for_dotfiles_repository_path, ask_for_default_dotfiles_branch;
 from assets.alerts import *
 from assets.assets import *
 from crud import source_shell_profile
+from configs import load_configs
 
 
 def syncAliasify(type):
@@ -24,7 +25,12 @@ def syncAliasify(type):
 
 
 def syncLocalToRemote():
-    dotfilesPath = prepareToSync()
+    """ Local -> Remote """
+    prepareToSync()
+
+    configs      = load_configs()
+    dotfilesPath = configs['dotfiles_path']
+    branch       = configs['dotfiles_default_branch']
 
     # Change the directory to the dotfiles path
     os.chdir(os.path.expanduser(dotfilesPath))
@@ -37,13 +43,17 @@ def syncLocalToRemote():
     result = subprocess.run(['cp', os.path.expanduser('~/.aliasify/aliasify'), dotfilesPath], capture_output=True, text=True)
 
     if result.returncode == 0:
-        sweetInfo(f"Copied Successfully to {dotfilesPath}.")
+        sweetInfo(' - Copied Successfully')
     else:
         error(f"Command '{command}' failed with return code {result.returncode}.")
         return;
 
     try:
-        run_git_command('git pull origin master')
+        result = run_git_command(f'git pull origin {branch}')
+
+        if result is None or result.returncode != 0:
+            error('Failed to sync, something went wrong!')
+            die()
 
         # After copy the aliases into dotfiles directory
         # the working directory now must be contained the updates
@@ -52,18 +62,24 @@ def syncLocalToRemote():
         # Otherwise, it means almost that aliasify is copied but with same content which means no difference there!
         if subprocess.run(['git', 'status', '--porcelain'], capture_output=True, text=True).stdout.strip():
             run_git_command('git add .')
-            run_git_command('git commit -m "Synced aliasify from local to remote repository."')
+            run_git_command('git commit -m "Synced aliasify from local to remote repository."').stdout()
             run_git_command('git add .')
-            run_git_command('git push origin master')
-            success("Pushed Successfully, Your DotFiles is now up to date!")
+            run_git_command('git push origin ' + branch)
+
+            success(' - Pushed Successfully, Your DotFiles is now up to date!')
         else:
-            success('It seemed that you already synced with your Remote Dotfiles Repository.')
+            success(' - It seemed that you already synced with your Remote Dotfiles Repository.')
     except Exception as exc:
         error(f"Failed to sync aliasify from local to remote repository: {exc}")
 
 
 def syncRemoteToLocal():
-    dotfilesPath            = prepareToSync()
+    """ Local <- Remote """
+    prepareToSync()
+
+    configs                 = load_configs()
+    dotfilesPath            = configs['dotfiles_path']
+    branch                  = configs['dotfiles_default_branch']
     aliasifySourcePath      = dotfilesPath + '/aliasify';
     aliasifyDestinationPath = os.path.expanduser('~/.aliasify/aliasify');
     previousDir             = os.environ.get('PWD')
@@ -76,11 +92,15 @@ def syncRemoteToLocal():
     # Check the git status before any action!
     check_git_status()
 
+    sweetInfo(' - Pulling Dotfiles ...')
+
     # Start Pulling Operation
     try:
-        sweetInfo(' - Pulling Dotfiles ...')
+        result = run_git_command(f'git pull origin {branch}')
 
-        run_git_command('git pull origin master')
+        if result is None or result.returncode != 0:
+            error('Failed to sync, something went wrong!')
+            die()
 
         # Copy the newest dotfiles
         result = subprocess.run(['cp', aliasifySourcePath, aliasifyDestinationPath], capture_output=True, text=True)
@@ -90,9 +110,8 @@ def syncRemoteToLocal():
         if result.returncode == 0:
             if previousDir:
                 os.chdir(previousDir)
-
-            success(' - Synced Successfully. Your local is now up to date.')
-            source_shell_profile()
+                success(' - Synced Successfully. Your local is now up to date.')
+                source_shell_profile()
         else:
             error(f"Command '{command}' failed with return code {result.returncode}.")
             return;
@@ -103,8 +122,10 @@ def syncRemoteToLocal():
 
 def prepareToSync():
     sweetInfo(' - Preparing ...')
+
     create_configs_file_if_not_exist()
-    return ask_for_dotfiles_repository_path()
+    ask_for_dotfiles_repository_path()
+    ask_for_default_dotfiles_branch()
 
 
 def check_git_status():
@@ -135,6 +156,7 @@ def check_git_status():
 def run_git_command(command):
     try:
         result = subprocess.run(command, shell=True, check=True, text=True, capture_output=True)
-        # print(result.stdout)
+        return result
     except subprocess.CalledProcessError as e:
         print(f"Error executing command '{command}': {e.stderr}")
+        return None

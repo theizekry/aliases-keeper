@@ -1,9 +1,12 @@
 import subprocess
 import os
 import sys
-from configs import create_configs_file_if_not_exist, ask_for_dotfiles_repository_path;
-from assets.alerts import *;
 import click
+from configs import create_configs_file_if_not_exist, ask_for_dotfiles_repository_path;
+from assets.alerts import *
+from assets.assets import *
+from crud import source_shell_profile
+
 
 def syncAliasify(type):
     sync_messages = {
@@ -29,7 +32,7 @@ def syncLocalToRemote():
     # Check the git status before any action!
     check_git_status()
 
-    sweetInfo("Syncing to Remote Repository, Please wait...")
+    sweetInfo(' - Syncing to Remote Repository, Please wait ...')
 
     result = subprocess.run(['cp', os.path.expanduser('~/.aliasify/aliasify'), dotfilesPath], capture_output=True, text=True)
 
@@ -54,17 +57,52 @@ def syncLocalToRemote():
             run_git_command('git push origin master')
             success("Pushed Successfully, Your DotFiles is now up to date!")
         else:
-            sweetInfo('It seemed that you already synced with your Remote Dotfiles Repository.')
+            success('It seemed that you already synced with your Remote Dotfiles Repository.')
     except Exception as exc:
         error(f"Failed to sync aliasify from local to remote repository: {exc}")
 
 
 def syncRemoteToLocal():
-    prepareToSync()
+    dotfilesPath            = prepareToSync()
+    aliasifySourcePath      = dotfilesPath + '/aliasify';
+    aliasifyDestinationPath = os.path.expanduser('~/.aliasify/aliasify');
+    previousDir             = os.environ.get('PWD')
+
+    # Change the directory to the dotfiles path
+    os.chdir(os.path.expanduser(dotfilesPath))
+
+    sweetInfo(' - Syncing The Remote Repository to your local, Please wait ...')
+
+    # Check the git status before any action!
+    check_git_status()
+
+    # Start Pulling Operation
+    try:
+        sweetInfo(' - Pulling Dotfiles ...')
+
+        run_git_command('git pull origin master')
+
+        # Copy the newest dotfiles
+        result = subprocess.run(['cp', aliasifySourcePath, aliasifyDestinationPath], capture_output=True, text=True)
+
+        # Refresh the current shell session to take effects.
+        # Return to the previous working directory if it exists
+        if result.returncode == 0:
+            if previousDir:
+                os.chdir(previousDir)
+
+            success(' - Synced Successfully. Your local is now up to date.')
+            source_shell_profile()
+        else:
+            error(f"Command '{command}' failed with return code {result.returncode}.")
+            return;
+
+    except Exception as exc:
+        error(f"Failed to Pull dotfiles : {exc}")
 
 
 def prepareToSync():
-    sweetInfo("Preparing to sync to remote repository...")
+    sweetInfo(' - Preparing ...')
     create_configs_file_if_not_exist()
     return ask_for_dotfiles_repository_path()
 

@@ -2,51 +2,52 @@ import subprocess
 import os
 import sys
 import click
-from configs import create_configs_file_if_not_exist, ask_for_dotfiles_repository_path, ask_for_default_dotfiles_branch;
 from assets.alerts import *
 from assets.assets import *
-from crud import source_shell_profile
 from configs import load_configs
+from crud import source_shell_profile
+from configs import create_configs_file_if_not_exist, ask_for_dotfiles_repository_path, ask_for_default_dotfiles_branch
 
 
-def syncAliasify(type):
+def sync_aliasify(direction):
     sync_messages = {
         "local-to-remote": "You are about to sync your local aliases file with your remote Dotfiles Repository.\nThis will overwrite the remote file with your local changes.",
         "remote-to-local": "You are about to sync your remote aliases file to your local system.\nThis will overwrite your local file with the remote changes."
     }
 
-    info(sync_messages[type])
+    info(sync_messages[direction])
 
     if click.confirm('Do you want to continue?', abort=False, default=True):
         if type == 'local-to-remote':
-            syncLocalToRemote()
+            sync_local_to_remote()
         else:
-            syncRemoteToLocal()
+            sync_remote_to_local()
 
 
-def syncLocalToRemote():
+def sync_local_to_remote():
     """ Local -> Remote """
-    prepareToSync()
+    prepare_to_sync()
 
-    configs      = load_configs()
-    dotfilesPath = configs['dotfiles_path']
-    branch       = configs['dotfiles_default_branch']
+    configs = load_configs()
+    dotfiles_path = configs['dotfiles_path']
+    branch = configs['dotfiles_default_branch']
 
     # Change the directory to the dotfiles path
-    os.chdir(os.path.expanduser(dotfilesPath))
+    os.chdir(os.path.expanduser(dotfiles_path))
 
     # Check the git status before any action!
     check_git_status()
 
-    sweetInfo(' - Syncing to Remote Repository, Please wait ...')
+    sweet_info(' - Syncing to Remote Repository, Please wait ...')
 
-    result = subprocess.run(['cp', os.path.expanduser('~/.aliasify/aliasify'), dotfilesPath], capture_output=True, text=True)
+    result = subprocess.run(['cp', os.path.expanduser('~/.aliasify/aliasify'), dotfiles_path], capture_output=True,
+                            text=True)
 
     if result.returncode == 0:
-        sweetInfo(' - Copied Successfully')
+        sweet_info(' - Copied Successfully')
     else:
-        error(f"Command '{command}' failed with return code {result.returncode}.")
-        return;
+        error('something went wrong.')
+        return
 
     try:
         result = run_git_command(f'git pull origin {branch}')
@@ -62,7 +63,7 @@ def syncLocalToRemote():
         # Otherwise, it means almost that aliasify is copied but with same content which means no difference there!
         if subprocess.run(['git', 'status', '--porcelain'], capture_output=True, text=True).stdout.strip():
             run_git_command('git add .')
-            run_git_command('git commit -m "Synced aliasify from local to remote repository."').stdout()
+            run_git_command('git commit -m "Synced aliasify from local to remote repository."')
             run_git_command('git add .')
             run_git_command('git push origin ' + branch)
 
@@ -73,26 +74,26 @@ def syncLocalToRemote():
         error(f"Failed to sync aliasify from local to remote repository: {exc}")
 
 
-def syncRemoteToLocal():
+def sync_remote_to_local():
     """ Local <- Remote """
-    prepareToSync()
+    prepare_to_sync()
 
-    configs                 = load_configs()
-    dotfilesPath            = configs['dotfiles_path']
-    branch                  = configs['dotfiles_default_branch']
-    aliasifySourcePath      = dotfilesPath + '/aliasify';
-    aliasifyDestinationPath = os.path.expanduser('~/.aliasify/aliasify');
-    previousDir             = os.environ.get('PWD')
+    configs = load_configs()
+    dotfiles_path = configs['dotfiles_path']
+    branch = configs['dotfiles_default_branch']
+    aliasify_source_path = dotfiles_path + '/aliasify'
+    aliasify_destination_path = os.path.expanduser('~/.aliasify/aliasify')
+    previous_dir = os.environ.get('PWD')
 
     # Change the directory to the dotfiles path
-    os.chdir(os.path.expanduser(dotfilesPath))
+    os.chdir(os.path.expanduser(dotfiles_path))
 
-    sweetInfo(' - Syncing The Remote Repository to your local, Please wait ...')
+    sweet_info(' - Syncing The Remote Repository to your local, Please wait ...')
 
     # Check the git status before any action!
     check_git_status()
 
-    sweetInfo(' - Pulling Dotfiles ...')
+    sweet_info(' - Pulling Dotfiles ...')
 
     # Start Pulling Operation
     try:
@@ -103,25 +104,25 @@ def syncRemoteToLocal():
             die()
 
         # Copy the newest dotfiles
-        result = subprocess.run(['cp', aliasifySourcePath, aliasifyDestinationPath], capture_output=True, text=True)
+        result = subprocess.run(['cp', aliasify_source_path, aliasify_destination_path], capture_output=True, text=True)
 
         # Refresh the current shell session to take effects.
         # Return to the previous working directory if it exists
         if result.returncode == 0:
-            if previousDir:
-                os.chdir(previousDir)
+            if previous_dir:
+                os.chdir(previous_dir)
                 success(' - Synced Successfully. Your local is now up to date.')
                 source_shell_profile()
         else:
-            error(f"Command '{command}' failed with return code {result.returncode}.")
-            return;
+            error('Failed to sync, something went wrong!')
+            die()
 
     except Exception as exc:
         error(f"Failed to Pull dotfiles : {exc}")
 
 
-def prepareToSync():
-    sweetInfo(' - Preparing ...')
+def prepare_to_sync():
+    sweet_info(' - Preparing ...')
 
     create_configs_file_if_not_exist()
     ask_for_dotfiles_repository_path()
@@ -135,9 +136,7 @@ def check_git_status():
 
         # Check if there are changes in the working directory
         if result.stdout.strip():
-            warning("It seems you've some updates inside your repository! Your working directory is not clean.")
-            info("Syncing operation will be aborted to save your work.")
-            note("So, please check your repository status and make your working tree clean. then try again to Syncing.")
+            error(' - Sorry, Your dotfiles Repository has uncommitted changes. Sync aborted to save work.')
 
             # Return to the previous working directory if it exists
             previous_dir = os.environ.get('OLDPWD')

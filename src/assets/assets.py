@@ -1,15 +1,15 @@
 import os
-import colorama
 import pprint
 import sys
 
 # Directory to store aliases files
-ALIASES_DIR   = os.path.expanduser("~/.aliasify")
-ALIASES_FILE  = os.path.join(ALIASES_DIR, "aliasify")
-CONFIGS_FILE  = os.path.join(ALIASES_DIR, "configs.yml")
+ALIASES_DIR = os.path.expanduser("~/.aliasify")
+ALIASES_FILE = os.path.join(ALIASES_DIR, "aliasify")
+CONFIGS_FILE = os.path.join(ALIASES_DIR, "configs.yml")
 PROFILE_FILES = [os.path.expanduser("~/.bashrc"), os.path.expanduser("~/.zshrc")]
 
 LOG_OUTPUT = True
+
 
 def dd(*args):
     """

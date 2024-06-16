@@ -13,6 +13,7 @@ colors = {
     "RESET": "tput sgr0",
 }
 
+
 def color_message(message, color):
     # Get the tput command for the specified color
     color_command = colors.get(color.upper(), colors["RESET"])
@@ -24,6 +25,7 @@ def color_message(message, color):
 
     # Return the message with color and reset sequences
     return f"{color_sequence}{message}{reset_sequence}"
+
 
 def info(message):
     print(color_message(message, "CYAN"))
@@ -44,11 +46,14 @@ def error(message):
 def warning(message):
     print(color_message(message, "YELLOW"))
 
+
 def note(message):
     print(color_message(message, "WHITE"))
 
-def sweetInfo(message):
+
+def sweet_info(message):
     print(color_message(message, "MAGENTA"))
+
 
 __all__ = [
     'info',
@@ -57,5 +62,5 @@ __all__ = [
     'warning',
     'error',
     'note',
-    'sweetInfo',
+    'sweet_info',
 ]

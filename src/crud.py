@@ -1,11 +1,9 @@
-import click
 import os
-import shlex
 import subprocess
-from colorama import Fore, init
-from about_author import about_author
+from assets.alerts import *
 from assets.assets import *
-from assets.alerts import *;
+from about_author import about_author
+
 
 # Mapped shells to their profile files path.
 SHELL_PROFILE_MAP = {
@@ -20,6 +18,7 @@ SHELL_PROFILE_MAP = {
     "sh": "~/.profile",
 }
 
+
 def ensure_aliases_file_exists_and_sourced():
     """Ensure the aliases file exists, creating it if necessary"""
     """Create the aliases file with initial content"""
@@ -31,7 +30,7 @@ def ensure_aliases_file_exists_and_sourced():
         with open(ALIASES_FILE, "w") as f:
             f.write(f"{about_author()}\n")
 
-    alias_line = f"source \"{ALIASES_FILE}\""
+    alias_line = f"if [ -f '{ALIASES_FILE}' ]; then source '{ALIASES_FILE}'; fi"
 
     profile_file = detect_active_shell_profile()
 
@@ -53,17 +52,17 @@ def source_shell_profile():
     profile_file = detect_active_shell_profile()
 
     if not profile_file:
-        click.echo(Fore.RED + "Could not detect active shell or unsupported shell.")
-        return;
+        error('Could not detect active shell or unsupported shell.')
+        die()
 
     shell = os.path.basename(os.environ.get("SHELL", ""))
-    
+
     subprocess.run(f"exec {shell}", shell=True)
 
     # Inform the user how to source the profile manually
-    click.echo(Fore.GREEN + f"Sourced {profile_file} to refresh the shell environment.")
-    click.echo(Fore.YELLOW + f"If you encounter any issues, you can manually source the profile by running:")
-    click.echo(Fore.YELLOW + f"source {profile_file}")
+    success(f"Sourced {profile_file} to refresh the shell environment.")
+    warning("If you encounter any issues, you can manually source the profile by running:")
+    warning(f"source {profile_file}")
 
 
 def detect_active_shell_profile():
@@ -111,9 +110,9 @@ def create_alias(alias_name, alias_value, group="Other"):
             f.writelines(lines)
 
         if LOG_OUTPUT:
-            click.echo(Fore.GREEN + f"Alias '{alias_name}' created with value '{alias_value}' under group '{group}'.")
+            success(f"Alias '{alias_name}' created with value '{alias_value}' under group '{group}'.")
     else:
-        click.echo(Fore.RED + f"Alias '{alias_name}' already exists.")
+        error(f"Alias '{alias_name}' already exists.")
 
 
 def delete_alias(alias_name):
@@ -122,8 +121,8 @@ def delete_alias(alias_name):
     ensure_aliases_file_exists_and_sourced()
 
     if not alias_exists(alias_name):
-        click.echo(Fore.RED + f"Alias '{alias_name}' does not exist.")
-        return
+        error(f"Alias '{alias_name}' does not exist.")
+        die()
 
     with open(ALIASES_FILE, "r") as f:
         lines = f.readlines()
@@ -131,8 +130,8 @@ def delete_alias(alias_name):
     line_index = next((i for i, line in enumerate(lines) if f"alias {alias_name}=" in line), None)
 
     if line_index is None:
-        click.echo(Fore.RED + "Something went wrong.")
-        return
+        error('Something went wrong.')
+        die()
     else:
         # Remove the line containing the alias
         del lines[line_index]
@@ -141,7 +140,7 @@ def delete_alias(alias_name):
             f.writelines(lines)
 
         if LOG_OUTPUT:
-            click.echo(Fore.GREEN + f"Alias '{alias_name}' has been deleted.")
+            success(f"Alias '{alias_name}' has been deleted.")
 
 
 def edit_aliases(alias_name, alias_value, group):
@@ -152,12 +151,12 @@ def edit_aliases(alias_name, alias_value, group):
     LOG_OUTPUT = False
 
     if not alias_exists(alias_name):
-        click.echo(Fore.RED + f"Alias '{alias_name}' does not exist.")
-        return
+        error(f"Alias '{alias_name}' does not exist.")
+        die()
 
     delete_alias(alias_name)
     create_alias(alias_name, alias_value, group)
-    click.echo(Fore.GREEN + f"Alias '{alias_name}' Updated with value '{alias_value}' under group '{group}'.")
+    success(f"Alias '{alias_name}' Updated with value '{alias_value}' under group '{group}'.")
 
 
 def show_aliases():
@@ -170,4 +169,3 @@ def flush_aliases():
     ensure_aliases_file_exists_and_sourced()
     with open(ALIASES_FILE, 'w'):
         pass
-

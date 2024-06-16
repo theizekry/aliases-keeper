@@ -1,10 +1,9 @@
 import click
-from colorama import Fore, Style
 from about_author import about_author
-from assets.assets import *
 from crud import create_alias, delete_alias, show_aliases, edit_aliases, source_shell_profile, flush_aliases
-from sync import syncRemoteToLocal, syncLocalToRemote, syncAliasify
-from assets.alerts import *;
+from sync import sync_aliasify
+from assets.alerts import *
+
 
 @click.group()
 def main():
@@ -15,8 +14,8 @@ def main():
 @main.command()
 def about():
     """Display a welcome message"""
-    click.echo(Fore.BLUE + "Welcome to Aliases Keeper!")
-    click.echo(Fore.GREEN + about_author())
+    info('Welcome to Aliases Keeper!')
+    success(about_author())
 
 
 @main.command(short_help="Create a new alias")
@@ -63,10 +62,12 @@ def flush():
 
 
 @main.command(short_help="Sync your aliases with your Dotfiles Repository.")
-@click.option("--type", "-t", type=click.Choice(['local-to-remote', 'remote-to-local']), required=True, help="Sync direction: 'local-to-remote' or 'remote-to-local'.", default='local-to-remote')
-def sync(type):
+@click.option("--direction", "-d", type=click.Choice(['local-to-remote', 'remote-to-local']), required=True,
+              help="Sync direction: 'local-to-remote' or 'remote-to-local'.", default='local-to-remote')
+def sync(direction):
     """Sync aliases between local and remote Dotfiles repository."""
-    syncAliasify(type)
+    sync_aliasify(direction)
+
 
 if __name__ == "__main__":
     main()
